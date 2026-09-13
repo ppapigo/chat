@@ -1,3 +1,41 @@
+server:
+  port: 8092
+  forward-header-strategy: framework
+
+
 spring:
+  config:
+    import: optional:file:.env[.properties]
+
+  datasource:
+    url: jdbc:mysql://${DB_HOST:localhost}:${DB_PORT:3306}/${DB_NAME:chat}?serverTimezone=Asia/Seoul&characterEncoding=UTF-8
+    username: ${DB_USERNAME:root}
+    password: ${DB_PASSWORD}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.MySQLDialect
+        show_sql: false
+        format_sql: true
+
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+
   application:
     name: chat
+
+jwt:
+  secret: ${JWT_SECRET}
+
+app:
+  board:
+    schema: ${APP_BOARD_SHCEMA:board}
+  ws:
+    allowed-origin-pattern: ${APP_WS_ALLOWED_ORIGINS:http://localhost:*}
