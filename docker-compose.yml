@@ -1,0 +1,31 @@
+name: chat
+
+services:
+  chat-app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: ghcr.io/ppapigo/chat-app:latest
+    container_name: chat-app
+    env_file:
+      - .env
+    environment:
+      DB_HOST: mysql8
+      DB_PORT: "3306"
+      DB_NAME: ${DB_NAME}
+      REDIS_HOST: ${REDIS_HOST}
+      REDIS_PORT: ${REDIS_PORT}
+      TZ: Asia/Seoul
+    networks:
+      - board-net
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:8092/actuator/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 40s
+    restart: unless-stopped
+
+networks:
+  board-net:
+    external: true

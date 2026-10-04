@@ -1,17 +1,19 @@
 package com.example.chat.global.room;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
 
 import java.util.List;
 
+@Repository
 public interface RoomMemberRepository extends JpaRepository<RoomMember, Long> {
-    boolean existByRoomIdAndUserId(Long roomId, Long userId);
+    boolean existsByRoomIdAndUserId(Long roomId, Long userId);
 
     long countByRoomId(Long roomId);
 
     List<RoomMember> findAllByRoomIdOrderByJoinedAtAsc(Long roomId);
 
-    void deletedByRoomIdAndUserId(Long roomId, Long userId);
+    void deleteByRoomIdAndUserId(Long roomId, Long userId);
 
-    void deletedByRoomId(Long roomId);
+    void deleteByRoomId(Long roomId);
 }
