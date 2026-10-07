@@ -11,6 +11,6 @@ public record MemberResponse(
         LocalDateTime joinAt
 ) {
     public static MemberResponse of(RoomMember member, boolean online){
-        return new MemberResponse(member.getId(), member.getUsername(), online, member.getJoinedAt());
+        return new MemberResponse(member.getUserId(), member.getUsername(), online, member.getJoinedAt());
     }
 }

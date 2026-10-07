@@ -7,7 +7,8 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
 
-import java.nio.file.AccessDeniedException;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import java.util.List;
 
 @Slf4j
@@ -76,7 +77,12 @@ public class GlobalExceptionHandler {
         log.warn("Resource Not Found: {}", e.getMessage());
 
         return ResponseEntity
-                .status(ErrorCode.INTERNAL_SERVER_ERROR.getStatus())
-                .body(ErrorResponse.of(ErrorCode.INTERNAL_SERVER_ERROR));
+                .status(ErrorCode.RESOURCE_NOT_FOUND.getStatus())
+                .body(ErrorResponse.of(ErrorCode.RESOURCE_NOT_FOUND));
+    }
+
+    @ExceptionHandler(HttpMessageNotReadableException.class)
+    public ResponseEntity<ErrorResponse> handleMalformedRequest(HttpMessageNotReadableException e) {
+        return ResponseEntity.badRequest().body(ErrorResponse.of(ErrorCode.MALFORMED_REQUEST));
     }
 }

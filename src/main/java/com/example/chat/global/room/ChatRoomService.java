@@ -79,7 +79,7 @@ public class ChatRoomService {
         return toResponse(findRoom(roomId));
      }
 
-     @Transactional(readOnly = true)
+     @Transactional
     public RoomResponse join(Long roomId, ChatUserPrincipal principal){
         ChatRoom room =findRoom(roomId);
         if(!roomMemberRepository.existsByRoomIdAndUserId(roomId, principal.userId())){

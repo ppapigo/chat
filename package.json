@@ -1,0 +1,14 @@
+{
+  "name": "chat-project",
+  "private": true,
+  "type": "module",
+  "workspaces": ["frontend"],
+  "engines": { "node": ">=22" },
+  "scripts": {
+    "vendor": "npm run vendor --workspace=chat-web",
+    "preview": "npm run preview --workspace=chat-web",
+    "test": "npm run test --workspace=chat-web",
+    "test:e2e": "npm run test:e2e --workspace=chat-web",
+    "test:integration": "npm run test:integration --workspace=chat-web"
+  }
+}

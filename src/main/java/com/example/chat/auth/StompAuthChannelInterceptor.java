@@ -24,6 +24,7 @@ public class StompAuthChannelInterceptor implements ChannelInterceptor {
     private final ChatTokenAuthenticator authenticator;
     private final JwtTokenProvider tokenProvider;
     private final TokenDenylist tokenDenylist;
+    private final RoomSubscriptionAuthorizer subscriptionAuthorizer;
 
     @Override
     public @Nullable Message<?> preSend(@NonNull Message<?> message, @NonNull MessageChannel channel){
@@ -36,7 +37,15 @@ public class StompAuthChannelInterceptor implements ChannelInterceptor {
 
         switch (accessor.getCommand()){
             case CONNECT -> authenticateConnect(accessor);
-            case SEND,SUBSCRIBE -> requireLivePrincipal(accessor);
+            case SEND -> {
+                requireLivePrincipal(accessor);
+                subscriptionAuthorizer.authorizeSend(accessor.getDestination());
+            }
+            case SUBSCRIBE -> {
+                requireLivePrincipal(accessor);
+                subscriptionAuthorizer.authorize(accessor.getDestination(),
+                        ChatUserPrincipal.from(accessor.getUser()).orElseThrow());
+            }
             default -> {}
         }
 

@@ -3,11 +3,18 @@ package com.example.chat.presence;
 import com.example.chat.auth.ChatUserPrincipal;
 import com.example.chat.global.message.ChatMessageService;
 import com.example.chat.global.message.MessageType;
+import com.example.chat.global.message.ChatMessagePublisher;
+import com.example.chat.global.message.dto.RoomEvent;
+import com.example.chat.global.message.dto.RoomEventType;
+import com.example.chat.global.room.ChatRoomService;
+import com.example.chat.global.exception.NotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.event.EventListener;
 import org.springframework.messaging.simp.stomp.StompHeaderAccessor;
 import org.springframework.stereotype.Component;
 import org.springframework.web.socket.messaging.SessionSubscribeEvent;
+import org.springframework.web.socket.messaging.SessionUnsubscribeEvent;
+import org.springframework.web.socket.messaging.SessionDisconnectEvent;
 
 import java.security.Principal;
 import java.util.Optional;
@@ -19,6 +26,8 @@ import java.util.regex.Pattern;
 public class RoomPresenceListener {
     private final RoomPresenceTracker tracker;
     private final ChatMessageService chatMessageService;
+    private final ChatRoomService chatRoomService;
+    private final ChatMessagePublisher publisher;
 
     private static final Pattern ROOM_TOPIC = Pattern.compile("^/topic/room/(\\d+)$");
 
@@ -31,8 +40,18 @@ public class RoomPresenceListener {
     }
 
     private void leave(RoomPresenceTracker.Presence presence, Principal principal){
-        ChatUserPrincipal.from(principal)
-                .ifPresent(user -> chatMessageService.system(presence.roomId(),MessageType.LEAVE, user));
+        if (!presence.lastForUser()) return;
+        try {
+            ChatUserPrincipal.from(principal)
+                    .ifPresent(user -> chatMessageService.system(presence.roomId(),MessageType.LEAVE, user));
+            publishCount(presence.roomId());
+        } catch (NotFoundException ignored) {
+            // A deleted room may still have active socket subscriptions.
+        }
+    }
+
+    private void publishCount(Long roomId) {
+        publisher.publishRoomEvent(new RoomEvent(RoomEventType.MEMBER_COUNT, chatRoomService.get(roomId)));
     }
 
     @EventListener
@@ -53,6 +72,19 @@ public class RoomPresenceListener {
 
         if (first) {
             chatMessageService.system(roomId.get(), MessageType.ENTER,user.get());
+            publishCount(roomId.get());
         }
+    }
+
+    @EventListener
+    public void onUnsubscribe(SessionUnsubscribeEvent event) {
+        StompHeaderAccessor accessor = StompHeaderAccessor.wrap(event.getMessage());
+        tracker.unsubscribe(accessor.getSessionId(), accessor.getSubscriptionId())
+                .ifPresent(presence -> leave(presence, event.getUser()));
+    }
+
+    @EventListener
+    public void onDisconnect(SessionDisconnectEvent event) {
+        tracker.disconnect(event.getSessionId()).forEach(presence -> leave(presence, event.getUser()));
     }
 }

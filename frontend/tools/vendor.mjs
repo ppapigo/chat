@@ -1,0 +1,10 @@
+import { copyFile, mkdir } from 'node:fs/promises';
+import { createRequire } from 'node:module';
+import { dirname, resolve } from 'node:path';
+const require = createRequire(import.meta.url);
+const packageRoot = resolve(dirname(require.resolve('@stomp/stompjs')), '..');
+const target = new URL('../assets/vendor/', import.meta.url);
+await mkdir(target, { recursive: true });
+await copyFile(resolve(packageRoot, 'bundles/stomp.umd.min.js'), new URL('stomp.umd.min.js', target));
+await copyFile(resolve(packageRoot, 'LICENSE'), new URL('STOMP-LICENSE.txt', target));
+console.log('Vendored @stomp/stompjs 7.3.0 with its license.');

@@ -8,6 +8,8 @@ COPY gradle ./gradle
 RUN chmod +x gradlew && ./gradlew --no-daemon dependencies > /dev/null 2>&1 || true
 
 COPY src ./src
+COPY frontend/index.html ./frontend/index.html
+COPY frontend/assets ./frontend/assets
 RUN ./gradlew --no-daemon clean bootJar -x test
 
 FROM eclipse-temurin:21-jre AS runtime

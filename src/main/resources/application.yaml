@@ -1,6 +1,6 @@
 server:
   port: 8092
-  forward-header-strategy: framework
+  forward-headers-strategy: framework
 
 
 spring:
@@ -36,7 +36,7 @@ jwt:
 
 app:
   board:
-    schema: ${APP_BOARD_SHCEMA:board}
+    schema: ${APP_BOARD_SCHEMA:${APP_BOARD_SHCEMA:board}}
   ws:
     allowed-origin-patterns: ${APP_WS_ALLOWED_ORIGINS:http://localhost:*}
 

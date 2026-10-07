@@ -21,6 +21,13 @@ repositories {
 	mavenCentral()
 }
 
+tasks.named('processResources') {
+	from('frontend') {
+		include 'index.html', 'assets/**'
+		into 'static'
+	}
+}
+
 dependencies {
 	implementation 'io.jsonwebtoken:jjwt-api:0.12.6'
 	runtimeOnly 'io.jsonwebtoken:jjwt-impl:0.12.6'
@@ -44,9 +51,22 @@ dependencies {
 	testImplementation 'org.springframework.boot:spring-boot-starter-websocket-test'
 	testCompileOnly 'org.projectlombok:lombok'
 	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+	testRuntimeOnly 'com.h2database:h2'
 	testAnnotationProcessor 'org.projectlombok:lombok'
 }
 
 tasks.named('test') {
-	useJUnitPlatform()
+	useJUnitPlatform { excludeTags 'browser' }
+}
+
+tasks.register('browserIntegrationTest', Test) {
+	group = 'verification'
+	description = 'Runs Playwright against the actual Spring Boot HTTP and STOMP server.'
+	testClassesDirs = sourceSets.test.output.classesDirs
+	classpath = sourceSets.test.runtimeClasspath
+	inputs.files(fileTree('frontend/tests/integration') { include '**/*.mjs' },
+			'frontend/playwright.integration.config.mjs', 'package-lock.json', 'frontend/package.json')
+	inputs.property('browserPath', providers.environmentVariable('CHAT_BROWSER_PATH').orElse('playwright-chromium'))
+	useJUnitPlatform { includeTags 'browser' }
+	shouldRunAfter tasks.named('test')
 }

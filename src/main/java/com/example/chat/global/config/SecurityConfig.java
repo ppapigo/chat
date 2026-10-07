@@ -31,7 +31,7 @@ public class SecurityConfig {
                         session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth->auth
                         .requestMatchers("/ws/**").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/", "/index.html").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/", "/index.html", "/assets/**", "/actuator/health").permitAll()
                         .anyRequest().authenticated())
                 .exceptionHandling(e->e
                         .authenticationEntryPoint(authenticationEntryPoint)

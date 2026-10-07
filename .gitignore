@@ -38,3 +38,9 @@ out/
 
 ### env ###
 .env
+
+### Frontend tooling ###
+node_modules/
+.cache/
+playwright-report/
+test-results/

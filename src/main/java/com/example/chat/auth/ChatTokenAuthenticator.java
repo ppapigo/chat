@@ -30,10 +30,9 @@ public Optional<ChatUserPrincipal> authenticate(String token){
         }
 
         TokenClaims claims = parsed.get();
-      /*  if(tokenDenylist.isDenied(claims.jti())){
+        if(tokenDenylist.isDenied(claims.jti())){
             return Optional.empty();
         }
-*/
         return boardUserReader.findByUsername(claims.username())
                 .map(chatUser -> new ChatUserPrincipal(
                         chatUser.id(),

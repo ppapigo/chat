@@ -4,7 +4,6 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
-import org.hibernate.internal.log.ConnectionInfoLogger_$logger;
 
 import java.time.LocalDateTime;
 import java.util.List;

@@ -41,6 +41,6 @@ public class ChatMessageController {
     @MessageExceptionHandler(Exception.class)
     @SendToUser("/queue/errors")
     public ErrorResponse handleUnexpected(Exception ex){
-        return ErrorResponse.of();
+        return ErrorResponse.of(ErrorCode.INTERNAL_SERVER_ERROR);
     }
 }

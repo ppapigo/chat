@@ -14,9 +14,11 @@ public class RoomPresenceTracker {
     private final Map<Long, Map<String, Integer>> byRoom = new HashMap<>();
 
     public synchronized boolean subscribe(String sessionId, String subscriptionId, Long roomId, String email){
-        bySession.computeIfAbsent(
-          sessionId,k-> new HashMap<>())
-                        .put(subscriptionId, new Subscription(roomId, email));
+        Map<String, Subscription> subscriptions = bySession.computeIfAbsent(sessionId, k -> new HashMap<>());
+        Subscription existing = subscriptions.get(subscriptionId);
+        if (existing != null && existing.roomId().equals(roomId) && existing.email().equals(email)) return false;
+        if (existing != null) release(existing);
+        subscriptions.put(subscriptionId, new Subscription(roomId, email));
 
           Map<String, Integer> users = byRoom.computeIfAbsent(roomId,k->new HashMap<>());
           int count = users.merge(email,1,Integer::sum);

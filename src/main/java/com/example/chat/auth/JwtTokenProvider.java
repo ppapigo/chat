@@ -53,9 +53,8 @@ public class JwtTokenProvider {
 
         } catch (ExpiredJwtException e) {
             return true;
-      /*  } catch (JwtException | IllegalArgumentException e) {
-            return true;
-        } */
+        } catch (JwtException | IllegalArgumentException e) {
+            return false;
         }
 
     }

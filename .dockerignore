@@ -1,0 +1,15 @@
+.git
+.gradle
+.cache
+.idea
+build
+node_modules
+**/node_modules
+**/.cache
+**/playwright-report
+**/test-results
+playwright-report
+test-results
+.env
+.env.*
+!.env.example
