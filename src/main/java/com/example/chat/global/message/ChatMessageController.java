@@ -13,11 +13,13 @@ import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.messaging.simp.annotation.SendToUser;
 import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.RequestMapping;
 
 import java.security.Principal;
 
 @Controller
 @RequiredArgsConstructor
+@RequestMapping("/api/chat/rooms")
 public class ChatMessageController {
 
     private final ChatMessageService chatMessageService;
@@ -41,6 +43,6 @@ public class ChatMessageController {
     @MessageExceptionHandler(Exception.class)
     @SendToUser("/queue/errors")
     public ErrorResponse handleUnexpected(Exception ex){
-        return ErrorResponse.of();
+        return ErrorResponse.of(ErrorCode.INTERNAL_SERVER_ERROR);
     }
 }
