@@ -99,7 +99,7 @@ erDiagram
 - 잘못된 JWT를 STOMP의 내부 서버 오류로 오인하지 않도록 처리했습니다.
 - 참여하지 않은 방의 메시지 구독과 broker 토픽으로 직접 보내는 위조 메시지를 막고 구독 해제·연결 종료의 접속 상태 정리를 추가했습니다.
 - Spring Security의 접근 거부 예외 처리, malformed JSON, 없는 정적 리소스 오류를 실제 HTTP 상태에 맞췄습니다.
-- `APP_BOARD_SCHEMA`를 추가하고 기존 오타 변수 `APP_BOARD_SHCEMA`도 호환합니다.
+- Board 스키마는 `APP_BOARD_SCHEMA`로 설정합니다. 기존 오타 변수의 호환 처리는 제거했습니다.
 
 ## 운영 제약
 

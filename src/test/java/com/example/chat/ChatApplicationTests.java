@@ -153,6 +153,68 @@ class ChatApplicationTests {
         }
     }
 
+    @Test
+    void revokedTokenIsRejectedByBothHttpAndStompConnect() throws Exception {
+        String jti = UUID.randomUUID().toString();
+        String revoked = token("owner@example.com", jti, Instant.now().plusSeconds(600));
+        when(denylist.isDenied(jti)).thenReturn(true);
+
+        assertEquals(401, request("GET", "/api/chat/me", revoked, null).statusCode());
+        try (Socket socket = new Socket(revoked)) {
+            assertTrue(socket.frame("ERROR").contains("code:LOGIN_REQUIRED"));
+        }
+    }
+
+    @Test
+    void revocationAfterConnectRejectsSubscribeAndSend() throws Exception {
+        String jti = UUID.randomUUID().toString();
+        String owner = token("owner@example.com", jti, Instant.now().plusSeconds(600));
+        String observer = token("owner@example.com");
+        long id = createRoom(owner);
+        try (Socket subscriber = new Socket(owner); Socket sender = new Socket(owner)) {
+            subscriber.frame("CONNECTED");
+            sender.frame("CONNECTED");
+            when(denylist.isDenied(jti)).thenReturn(true);
+
+            subscriber.send("SUBSCRIBE\nid:revoked\ndestination:/topic/room/" + id + "\n\n\0");
+            assertTrue(subscriber.frame("ERROR").contains("code:LOGIN_REQUIRED"));
+            sender.send("SEND\ndestination:/app/room/" + id
+                    + "/message\ncontent-type:application/json\n\n{\"content\":\"revoked-message\"}\0");
+            assertTrue(sender.frame("ERROR").contains("code:LOGIN_REQUIRED"));
+        }
+        assertEquals(0, onlineCount(id, observer));
+        var history = request("GET", "/api/chat/rooms/" + id + "/messages", observer, null);
+        assertEquals(200, history.statusCode(), history.body());
+        assertTrue(json.readTree(history.body()).path("messages").isEmpty());
+    }
+
+    @Test
+    void stompRejectsWildcardAndCrossUserSubscriptions() throws Exception {
+        String owner = token("owner@example.com");
+        for (String destination : new String[]{"/topic/room/*", "/topic/**", "/queue/errors", "/user/another/queue/errors"}) {
+            try (Socket socket = new Socket(owner)) {
+                socket.frame("CONNECTED");
+                socket.send("SUBSCRIBE\nid:forbidden\ndestination:" + destination + "\n\n\0");
+                assertTrue(socket.frame("ERROR").contains("code:ACCESS_DENIED"), destination);
+            }
+        }
+    }
+
+    @Test
+    void leavingRoomRemovesPermissionToSubscribeAgain() throws Exception {
+        String owner = token("owner@example.com"), guest = token("guest@example.com");
+        long id = createRoom(owner);
+        String base = "/api/chat/rooms/" + id;
+        assertEquals(200, request("POST", base + "/join", guest, null).statusCode());
+        try (Socket socket = new Socket(guest)) {
+            socket.frame("CONNECTED");
+            assertEquals(204, request("DELETE", base + "/leave", guest, null).statusCode());
+            socket.send("SUBSCRIBE\nid:former-member\ndestination:/topic/room/" + id + "\n\n\0");
+            assertTrue(socket.frame("ERROR").contains("code:NOT_ROOM_MEMBER"));
+        }
+        assertEquals(0, onlineCount(id, owner));
+    }
+
     private int onlineCount(long id, String token) {
         try { return json.readTree(request("GET", "/api/chat/rooms/" + id, token, null).body()).path("onlineCount").asInt(); }
         catch (Exception e) { throw new RuntimeException(e); }

@@ -24,10 +24,36 @@
 | REDIS_HOST | localhost | Redis 호스트 |
 | REDIS_PORT | 6379 | Redis 포트 |
 | JWT_SECRET | 없음, 필수 | Base64 HMAC 키, 디코딩 후 최소 32바이트, Board와 동일 |
-| APP_BOARD_SCHEMA | board | Board 스키마. 이전 `APP_BOARD_SHCEMA`도 호환 |
+| APP_BOARD_SCHEMA | board | Board 스키마 |
 | APP_WS_ALLOWED_ORIGINS | `http://localhost:*` | 쉼표로 구분한 WebSocket browser origin 패턴 |
 
 `APP_BOARD_SCHEMA`에는 실제 DB 스키마 식별자만 넣으세요. 개발 환경에서 localhost와 127.0.0.1을 둘 다 쓴다면 `.env.example`처럼 두 origin을 설정합니다. 운영은 실제 HTTPS origin을 지정합니다.
+
+이전 설정에 `APP_BOARD_SHCEMA`가 남아 있다면 `APP_BOARD_SCHEMA`로 이름을 변경한 뒤 배포하세요. 오타 변수는 더 이상 읽지 않습니다.
+
+### 노출된 비밀정보 교체 및 Git 기록 정리
+
+`.env`가 과거 공개 커밋에 포함되어 있으므로 해당 JWT 키와 DB 암호는 노출된 것으로 취급합니다. `.gitignore` 추가나 파일 삭제 커밋만으로 과거 기록이 지워지지 않습니다. [GitHub 공식 절차](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/removing-sensitive-data-from-a-repository)에 따라 비밀정보를 먼저 폐기·교체합니다.
+
+1. Board와 Chat이 공유하는 JWT HMAC 키를 새 난수 키(디코딩 후 최소 32바이트)로 교체합니다. 두 서비스의 비밀 설정을 함께 갱신하고 재시작하여 기존 WebSocket 연결도 종료합니다. 이전 키로 발급한 토큰을 거부하고 다시 로그인하도록 합니다.
+2. MySQL에서 노출된 계정의 암호를 변경하고 해당 계정을 쓰는 모든 서비스의 비밀 설정을 갱신합니다. `.env` 값만 변경해서는 DB 암호가 바뀌지 않습니다. 기존 연결도 종료하고 새 암호로 연결되는지 확인합니다.
+3. 로컬 `.env`는 유지하되 `git rm --cached -- .env`로 Git 추적을 해제합니다. `.env.*`도 제외하고 값이 없는 `.env.example`만 커밋합니다. 삭제 diff에는 이전 비밀값이 표시될 수 있으므로 공유하지 마세요.
+4. 변경을 반영하고 협업자의 push를 일시 중지한 뒤 별도 디렉터리에 새 clone을 만들어 기록을 정리합니다. `git-filter-repo` 2.47 이상이 필요하며, 다른 이름으로 저장했던 비밀 파일이 있으면 해당 경로도 추가합니다.
+
+```sh
+git clone https://github.com/ppapigo/chat.git chat-history-cleanup
+cd chat-history-cleanup
+git filter-repo --sensitive-data-removal --invert-paths --path .env
+git log --all --format=oneline -- .env
+```
+
+마지막 명령의 출력이 없어야 합니다. `git-filter-repo`의 변경된 ref 목록과 최초 변경 커밋을 검토합니다. 이 단계는 로컬 clone만 정리하며 GitHub 기록은 아직 그대로입니다. 원격 갱신 시 모든 영향받은 브랜치·태그를 함께 처리해야 하며 커밋 ID가 바뀝니다. `origin`이 제거되었다면 원래 URL을 다시 등록합니다. 협업자와 반영 시점을 합의한 뒤 위 전용 clone에서 실행합니다.
+
+```sh
+git push --force --mirror origin
+```
+
+보호된 브랜치·PR ref의 거부 내역을 확인하고, 남은 PR 참조·캐시의 제거가 필요하면 GitHub Support 절차를 따릅니다. 협업자는 새로 clone하며 기존 기록을 merge하거나 push하지 않습니다. 다른 clone·fork의 사본은 이 작업으로 제거되지 않습니다. 기록 정리 후에도 비밀정보 교체는 필수입니다.
 
 DB 시간대 URL 옵션은 Asia/Seoul이며 DTO는 `LocalDateTime`을 반환합니다. 서버/JVM과 브라우저 표시 기준을 맞추려면 서버 시간대를 Asia/Seoul로 설정하세요. Compose는 `TZ=Asia/Seoul`을 지정합니다. 전 세계 사용자 지원 시 UTC·offset이 있는 시각 계약으로 바꾸는 작업이 필요합니다.
 

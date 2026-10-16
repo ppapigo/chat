@@ -38,6 +38,8 @@ out/
 
 ### env ###
 .env
+.env.*
+!.env.example
 
 ### Frontend tooling ###
 node_modules/
