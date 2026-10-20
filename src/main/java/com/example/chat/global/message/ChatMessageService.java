@@ -13,6 +13,7 @@ import com.example.chat.global.room.RoomMemberRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -29,7 +30,7 @@ public class ChatMessageService {
     private final ChatRoomRepository chatRoomRepository;
     private final RoomMemberRepository roomMemberRepository;
     private final ChatMessageRepository chatMessageRepository;
-    private final ChatMessagePublisher publisher;
+    private final ApplicationEventPublisher events;
 
     private ChatRoom findRoom(Long roomId){
         return chatRoomRepository.findById(roomId)
@@ -42,9 +43,9 @@ public class ChatMessageService {
         }
     }
 
-    private MessageResponse saveAndPublish(ChatMessage message){
+    private MessageResponse saveAndSchedulePublish(ChatMessage message){
         MessageResponse response = MessageResponse.from(chatMessageRepository.save(message));
-        publisher.publisheMessage(response);
+        events.publishEvent(new ChatMessageSavedEvent(response));
         return response;
     }
 
@@ -61,7 +62,7 @@ public class ChatMessageService {
         ChatRoom room = findRoom(roomId);
         requireMember(roomId, sender.userId());
 
-        return saveAndPublish(
+        return saveAndSchedulePublish(
                 new ChatMessage(room, MessageType.TALK, sender.userId(), sender.getName(), text)
         );
     }
@@ -71,7 +72,7 @@ public class ChatMessageService {
         ChatRoom room = findRoom(roomId);
         String text = principal.getName() + ((type == MessageType.ENTER) ? "님이 입장했습니다." :
                 "님이 퇴장했습니다.");
-        return saveAndPublish(
+        return saveAndSchedulePublish(
                 new ChatMessage(room,type, principal.userId(), principal.getName(), text)
         );
 
