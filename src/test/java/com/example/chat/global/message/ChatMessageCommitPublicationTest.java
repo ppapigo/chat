@@ -10,11 +10,13 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
+import org.springframework.transaction.event.TransactionalEventListenerFactory;
 import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.transaction.support.TransactionSynchronizationUtils;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
@@ -31,6 +33,10 @@ class ChatMessageCommitPublicationTest {
     void setUp() {
         publisher = mock(ChatMessagePublisher.class);
         context = new AnnotationConfigApplicationContext();
+        // A minimal context does not auto-register the transactional listener factory.
+        // Spring Boot normally registers it when transaction management is enabled.
+        context.registerBean(TransactionalEventListenerFactory.class,
+                TransactionalEventListenerFactory::new);
         context.registerBean(ChatMessageCommittedListener.class,
                 () -> new ChatMessageCommittedListener(publisher));
         context.refresh();
@@ -69,6 +75,8 @@ class ChatMessageCommitPublicationTest {
     private void sendMessage() {
         service.send(7L, new ChatUserPrincipal(10L, "test@example.com", "tester",
                 "token", Instant.now().plusSeconds(60)), "hello");
+        assertFalse(TransactionSynchronizationManager.getSynchronizations().isEmpty(),
+                "A transactional event synchronization must be registered");
     }
 
     @Test
